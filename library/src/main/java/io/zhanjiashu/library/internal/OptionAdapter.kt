@@ -24,7 +24,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import io.zhanjiashu.library.R
-import io.zhanjiashu.library.safeCast
 
 
 internal class OptionAdapter constructor(val data: MutableList<String>) : RecyclerView.Adapter<OptionVH>() {
@@ -63,8 +62,7 @@ internal class OptionAdapter constructor(val data: MutableList<String>) : Recycl
         return data.size
     }
 
-
-    public fun setOnItemViewClickListener(l: (v: View, position: Int, option: String) -> Unit) {
+    fun setOnItemViewClickListener(l: (v: View, position: Int, option: String) -> Unit) {
         mItemViewClickListener = l
     }
 

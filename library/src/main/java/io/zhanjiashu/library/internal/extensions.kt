@@ -15,7 +15,7 @@
  */
 
 
-package io.zhanjiashu.library
+package io.zhanjiashu.library.internal
 
 
 internal inline fun <reified T> Any.safeCast(action: T.() -> Unit) {

@@ -15,19 +15,20 @@
  */
 
 
-package io.zhanjiashu.library.internal
+package io.zhanjiashu.library
 
 import android.content.Context
 import android.support.design.widget.TabLayout
 import android.support.v7.widget.RecyclerView
-import android.util.Log
 import android.view.View
-import io.zhanjiashu.library.R
-import io.zhanjiashu.library.adapter.MultistagePickerDataProvider
+import android.view.ViewGroup
+import io.zhanjiashu.library.internal.MultistagePickerInterface
+import io.zhanjiashu.library.provider.MultistagePickerDataProvider
+import io.zhanjiashu.library.internal.OptionAdapter
 
-internal class MultistagePickerView(context: Context) {
+class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
 
-    val view: View = View.inflate(context, R.layout.multistage_picker_view, null)
+    private val pickerView: View = View.inflate(context, R.layout.multistage_picker_view, null)
 
     private val recyclerView: RecyclerView
     private val tabLayout: TabLayout
@@ -36,7 +37,7 @@ internal class MultistagePickerView(context: Context) {
     private val optionAdapter: OptionAdapter
 
     private lateinit var dataProvider:  MultistagePickerDataProvider
-    internal var completedListener: ((selectedOptions: Map<String, String>) -> Unit)? = null
+    private var completedListener: ((selectedOptions: Map<String, String>) -> Unit)? = null
 
     private var curStagePosition = 0
     private val curStageKey: String
@@ -49,9 +50,9 @@ internal class MultistagePickerView(context: Context) {
     private val mSelectedOptions = mutableMapOf<String, String>()   // 已选值
 
     init {
-        recyclerView = view.findViewById(R.id.rcv)
-        tabLayout = view.findViewById(R.id.tab_layout)
-        okBtn = view.findViewById(R.id.tv_btn_ok)
+        recyclerView = pickerView.findViewById(R.id.rcv)
+        tabLayout = pickerView.findViewById(R.id.tab_layout)
+        okBtn = pickerView.findViewById(R.id.tv_btn_ok)
 
         optionAdapter = OptionAdapter()
         optionAdapter.setOnItemViewClickListener { _, _, option ->
@@ -79,16 +80,6 @@ internal class MultistagePickerView(context: Context) {
 
         okBtn.setOnClickListener { notifyPickCompleted() }
     }
-
-    fun setDataProvider(provider: MultistagePickerDataProvider) {
-        this.dataProvider = provider
-
-        refreshOptions()
-    }
-
-//    fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
-//        this.completedListener = l
-//    }
 
     private fun refreshOptions() {
         val options = dataProvider.stageData(curStageKey, mSelectedOptions)
@@ -153,5 +144,26 @@ internal class MultistagePickerView(context: Context) {
 
     private fun notifyPickCompleted() {
         completedListener?.invoke(mSelectedOptions)
+    }
+
+
+    /* 对外暴露的方法 */
+
+    override fun setDataProvider(provider: MultistagePickerDataProvider) {
+        this.dataProvider = provider
+
+        refreshOptions()
+    }
+
+    override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
+        completedListener = l
+    }
+
+    fun getView(): View {
+        return pickerView
+    }
+
+    fun bindToLayout(layout: ViewGroup) {
+        layout.addView(pickerView)
     }
 }

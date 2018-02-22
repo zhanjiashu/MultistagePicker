@@ -18,29 +18,45 @@
 package io.zhanjiashu.library
 
 import android.content.Context
+import android.support.design.widget.BottomSheetDialog
 import android.view.View
-import android.view.ViewGroup
-import io.zhanjiashu.library.adapter.MultistagePickerDataProvider
-import io.zhanjiashu.library.internal.MultistagePickerView
+import io.zhanjiashu.library.internal.MultistagePickerInterface
+import io.zhanjiashu.library.provider.MultistagePickerDataProvider
 
-class MultistagePicker(context: Context) {
-
-    private val pickerView: MultistagePickerView = MultistagePickerView(context)
-
-    fun setDataProvider(provider: MultistagePickerDataProvider) {
-        pickerView.setDataProvider(provider)
+class MultistagePicker(context: Context) : MultistagePickerInterface {
+    private val dialog = BottomSheetDialog(context)
+    private val realPicker = CommonMultistagePicker(context)
+    init {
+        dialog.setContentView(realPicker.getView())
+        dialog.apply {
+            // 屏蔽BottomDialog的下滑隐藏
+            setCancelable(false)
+            // 点击外部区域隐藏选择器
+            window.findViewById<View>(android.support.design.R.id.touch_outside).setOnClickListener {
+                if (dialog.isShowing) {
+                    dialog.cancel()
+                }
+            }
+            // 限制选择器的视图高度为 屏幕高度 的一半
+            val container = window.findViewById<View>(android.support.design.R.id.design_bottom_sheet)
+            val lp = container.layoutParams
+            lp.height = (context.resources.displayMetrics.heightPixels / 2.0F).toInt()
+            container.layoutParams = lp
+        }
     }
 
-    fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
-        pickerView.completedListener = l
+    override fun setDataProvider(provider: MultistagePickerDataProvider) {
+        realPicker.setDataProvider(provider)
     }
 
-    private fun getView(): View {
-        return pickerView.view
+    override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
+        realPicker.setOnPickCompletedListener {
+            l.invoke(it)
+            dialog.dismiss()
+        }
     }
 
-    fun bindToLayout(layout: ViewGroup) {
-        layout.addView(getView())
+    fun show() {
+        dialog.show()
     }
-
 }

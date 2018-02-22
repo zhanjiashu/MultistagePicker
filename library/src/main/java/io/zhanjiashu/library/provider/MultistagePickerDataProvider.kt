@@ -15,13 +15,14 @@
  */
 
 
-package io.zhanjiashu.library.adapter
+package io.zhanjiashu.library.provider
 
 abstract class MultistagePickerDataProvider {
     abstract fun stageKeys(): List<String>
-    //    abstract fun stageTabText(stageKey: String): String
+
     fun stageTabText(stageKey: String): String {
         return "请选择"
     }
+
     abstract fun stageData(stageKey: String, upperStageSelectedOptions: Map<String, String>): List<String>?
 }
