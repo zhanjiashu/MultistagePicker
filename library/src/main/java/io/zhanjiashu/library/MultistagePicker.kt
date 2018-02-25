@@ -23,7 +23,7 @@ import android.view.View
 import io.zhanjiashu.library.internal.MultistagePickerInterface
 import io.zhanjiashu.library.provider.MultistagePickerDataProvider
 
-class MultistagePicker(context: Context) : MultistagePickerInterface {
+open class MultistagePicker(context: Context) : MultistagePickerInterface {
     private val dialog = BottomSheetDialog(context)
     private val realPicker = CommonMultistagePicker(context)
     init {
