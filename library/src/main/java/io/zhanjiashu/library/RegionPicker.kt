@@ -35,6 +35,14 @@ class RegionPicker(context: Context) {
         }
     }
 
+    fun setDefaultRegions(province: String?, city: String?, district: String?) {
+        val options = mutableMapOf<String, String>()
+        province?.let { options[STAGE_KEY_PROVINCE] = it }
+        city?.let { options[STAGE_KEY_CITY] = it }
+        district?.let { options[STAGE_KEY_DISTRICT] = it }
+        picker.setSelectedOptions(options)
+    }
+
     fun setOnAddressPickSuccessListener(l: (province: String, city: String, district: String) -> Unit) {
         addressPickSuccessListener = l
     }

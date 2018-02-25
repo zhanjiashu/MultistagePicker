@@ -20,7 +20,7 @@ package io.zhanjiashu.library.provider
 abstract class MultistagePickerDataProvider {
     abstract fun stageKeys(): List<String>
 
-    fun stageTabText(stageKey: String): String {
+    open fun stageTabText(stageKey: String): String {
         return "请选择"
     }
 

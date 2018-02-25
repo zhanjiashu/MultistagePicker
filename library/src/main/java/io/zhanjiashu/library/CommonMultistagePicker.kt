@@ -25,6 +25,7 @@ import android.view.ViewGroup
 import io.zhanjiashu.library.internal.MultistagePickerInterface
 import io.zhanjiashu.library.provider.MultistagePickerDataProvider
 import io.zhanjiashu.library.internal.OptionAdapter
+import io.zhanjiashu.library.internal.scrollToPositionAtTop
 
 class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
 
@@ -37,6 +38,7 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
     private val optionAdapter: OptionAdapter
 
     private lateinit var dataProvider:  MultistagePickerDataProvider
+    private var preSelectedOptions: Map<String, String>? = null
     private var completedListener: ((selectedOptions: Map<String, String>) -> Unit)? = null
 
     private var curStagePosition = 0
@@ -48,6 +50,8 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         get() = dataProvider.stageKeys().size
 
     private val mSelectedOptions = mutableMapOf<String, String>()   // 已选值
+
+    private val tabSelectedListener: TabLayout.OnTabSelectedListener
 
     init {
         recyclerView = pickerView.findViewById(R.id.rcv)
@@ -62,7 +66,7 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         recyclerView.setHasFixedSize(true)
         recyclerView.adapter = optionAdapter
 
-        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        tabSelectedListener = object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val position = tabLayout.selectedTabPosition
                 if (position != curStagePosition) {
@@ -76,7 +80,8 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
             override fun onTabReselected(tab: TabLayout.Tab) {
             }
 
-        })
+        }
+        tabLayout.addOnTabSelectedListener(tabSelectedListener)
 
         okBtn.setOnClickListener { notifyPickCompleted() }
     }
@@ -91,6 +96,41 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
             }
             notifyDataSetChanged()
         }
+    }
+
+    private fun preSelect() {
+        preSelectedOptions?.let { options ->
+            var latestTab: TabLayout.Tab? = null
+            (0 until stageCount)
+                    .asSequence()
+                    .takeWhile {
+                        val key = dataProvider.stageKeys()[it]
+                        return@takeWhile options.containsKey(key) && optionInTheTargetStage(key, options[key])
+                    }
+                    .forEach {
+                        curStagePosition = it
+                        val key = dataProvider.stageKeys()[it]
+                        val selectedOption = options[key]!!
+
+                        mSelectedOptions[key] = selectedOption
+
+                        latestTab = getStageTab(it).apply {
+                            text = selectedOption
+                        }
+                    }
+
+            tabLayout.removeOnTabSelectedListener(tabSelectedListener)
+            latestTab?.select()
+            tabLayout.addOnTabSelectedListener(tabSelectedListener)
+
+            okBtn.isEnabled = isLowestStage
+
+            refreshOptions()
+            val latestStageOptions = dataProvider.stageData(curStageKey, mSelectedOptions)
+            val targetOptionIndex = latestStageOptions?.indexOf(options[curStageKey]) ?: -1
+            recyclerView.scrollToPositionAtTop(targetOptionIndex)
+
+        }
 
     }
 
@@ -101,11 +141,15 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
     private fun onStageSelected(stagePosition: Int, tab: TabLayout.Tab, upwards: Boolean) {
         curStagePosition = stagePosition
         refreshOptions()
-        val selectedOptionOfCurStage = mSelectedOptions[curStageKey]
-        tab.text = selectedOptionOfCurStage ?: dataProvider.stageTabText(curStageKey)
+        val selectedOption = mSelectedOptions[curStageKey]
+        tab.text = selectedOption ?: dataProvider.stageTabText(curStageKey)
         if (upwards) {
             resetLowerStages()
             okBtn.isEnabled = false
+            selectedOption?.let {
+                val latestStageOptions = dataProvider.stageData(curStageKey, mSelectedOptions)
+                recyclerView.scrollToPositionAtTop(latestStageOptions?.indexOf(it) ?: -1)
+            }
         } else {
             recyclerView.scrollToPosition(0)
         }
@@ -124,14 +168,19 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
 
     // 跳至下一层级，如果该选择器尚未存在，则创建并渲染；若已存在，则渲染
     private fun jumpToNextStage() {
-        val nextTabItem: TabLayout.Tab
-        if (tabLayout.selectedTabPosition < tabLayout.tabCount - 1) {
-            nextTabItem = tabLayout.getTabAt(tabLayout.selectedTabPosition + 1)!!
-            nextTabItem.select()
+        val nextTab = getStageTab(tabLayout.selectedTabPosition + 1)
+        nextTab.select()
+    }
+
+    private fun getStageTab(stagePosition: Int): TabLayout.Tab {
+        val tab: TabLayout.Tab
+        if (stagePosition < tabLayout.tabCount) {
+            tab = tabLayout.getTabAt(stagePosition)!!
         } else {
-            nextTabItem = tabLayout.newTab()
-            tabLayout.addTab(nextTabItem, true)
+            tab = tabLayout.newTab()
+            tabLayout.addTab(tab)
         }
+        return tab
     }
 
     // 重置低层级选择器
@@ -146,6 +195,10 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         completedListener?.invoke(mSelectedOptions)
     }
 
+    private fun optionInTheTargetStage(stageKey: String, selectedOption: String?): Boolean {
+        return selectedOption != null && dataProvider.stageData(stageKey, mSelectedOptions)?.contains(selectedOption) ?: false
+    }
+
 
     /* 对外暴露的方法 */
 
@@ -153,6 +206,11 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         this.dataProvider = provider
 
         refreshOptions()
+    }
+
+    override fun setSelectedOptions(selectedOptions: Map<String, String>) {
+        preSelectedOptions = selectedOptions
+        preSelect()
     }
 
     override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {

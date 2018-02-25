@@ -59,7 +59,6 @@ class AddressPickerDataProvider(context: Context) : MultistagePickerDataProvider
 
     init {
         if (mRegionData.isEmpty()) {
-            Log.i("MultiPicker", "解析XML")
             parseRegionsXML(context)
         }
     }
@@ -68,6 +67,18 @@ class AddressPickerDataProvider(context: Context) : MultistagePickerDataProvider
 
     override fun stageKeys(): List<String> {
         return keys
+    }
+
+    override fun stageTabText(stageKey: String): String {
+        return when (stageKey) {
+            STAGE_KEY_PROVINCE -> "省"
+
+            STAGE_KEY_CITY -> "城市"
+
+            STAGE_KEY_DISTRICT -> "区县"
+
+            else -> "请选择"
+        }
     }
 
     override fun stageData(stageKey: String, upperStageSelectedOptions: Map<String, String>): List<String>? {

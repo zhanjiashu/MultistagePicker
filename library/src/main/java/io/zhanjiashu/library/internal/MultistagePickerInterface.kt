@@ -24,4 +24,6 @@ interface MultistagePickerInterface {
     fun setDataProvider(provider: MultistagePickerDataProvider)
 
     fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit)
+
+    fun setSelectedOptions(selectedOptions: Map<String, String>)
 }

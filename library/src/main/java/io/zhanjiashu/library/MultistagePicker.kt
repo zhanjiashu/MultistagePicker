@@ -49,6 +49,10 @@ open class MultistagePicker(context: Context) : MultistagePickerInterface {
         realPicker.setDataProvider(provider)
     }
 
+    override fun setSelectedOptions(selectedOptions: Map<String, String>) {
+        realPicker.setSelectedOptions(selectedOptions)
+    }
+
     override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
         realPicker.setOnPickCompletedListener {
             l.invoke(it)
