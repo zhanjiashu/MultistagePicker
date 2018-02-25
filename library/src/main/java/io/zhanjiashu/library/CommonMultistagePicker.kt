@@ -38,20 +38,23 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
     private val optionAdapter: OptionAdapter
 
     private lateinit var dataProvider:  MultistagePickerDataProvider
-    private var preSelectedOptions: Map<String, String>? = null
     private var completedListener: ((selectedOptions: Map<String, String>) -> Unit)? = null
 
     private var curStagePosition = 0
+
     private val curStageKey: String
         get() = dataProvider.stageKeys()[curStagePosition]
+
+    private val curStageOptions: List<String>?
+        get() = dataProvider.stageData(curStageKey, mSelectedOptions)
+
     private val isLowestStage: Boolean
         get() = curStagePosition == stageCount - 1
+
     private val stageCount: Int
         get() = dataProvider.stageKeys().size
 
     private val mSelectedOptions = mutableMapOf<String, String>()   // 已选值
-
-    private val tabSelectedListener: TabLayout.OnTabSelectedListener
 
     init {
         recyclerView = pickerView.findViewById(R.id.rcv)
@@ -66,11 +69,12 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         recyclerView.setHasFixedSize(true)
         recyclerView.adapter = optionAdapter
 
-        tabSelectedListener = object : TabLayout.OnTabSelectedListener {
+
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 val position = tabLayout.selectedTabPosition
                 if (position != curStagePosition) {
-                    onStageSelected(position, tab, position < curStagePosition)
+                    onStageSelected(position, tab,  position < curStagePosition)
                 }
             }
 
@@ -80,58 +84,20 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
             override fun onTabReselected(tab: TabLayout.Tab) {
             }
 
-        }
-        tabLayout.addOnTabSelectedListener(tabSelectedListener)
+        })
 
         okBtn.setOnClickListener { notifyPickCompleted() }
     }
 
+    // 刷新选项列表视图
     private fun refreshOptions() {
-        val options = dataProvider.stageData(curStageKey, mSelectedOptions)
-
         optionAdapter.apply {
             data.clear()
-            options?.let {
+            curStageOptions?.let {
                 data.addAll(it)
             }
             notifyDataSetChanged()
         }
-    }
-
-    private fun preSelect() {
-        preSelectedOptions?.let { options ->
-            var latestTab: TabLayout.Tab? = null
-            (0 until stageCount)
-                    .asSequence()
-                    .takeWhile {
-                        val key = dataProvider.stageKeys()[it]
-                        return@takeWhile options.containsKey(key) && optionInTheTargetStage(key, options[key])
-                    }
-                    .forEach {
-                        curStagePosition = it
-                        val key = dataProvider.stageKeys()[it]
-                        val selectedOption = options[key]!!
-
-                        mSelectedOptions[key] = selectedOption
-
-                        latestTab = getStageTab(it).apply {
-                            text = selectedOption
-                        }
-                    }
-
-            tabLayout.removeOnTabSelectedListener(tabSelectedListener)
-            latestTab?.select()
-            tabLayout.addOnTabSelectedListener(tabSelectedListener)
-
-            okBtn.isEnabled = isLowestStage
-
-            refreshOptions()
-            val latestStageOptions = dataProvider.stageData(curStageKey, mSelectedOptions)
-            val targetOptionIndex = latestStageOptions?.indexOf(options[curStageKey]) ?: -1
-            recyclerView.scrollToPositionAtTop(targetOptionIndex)
-
-        }
-
     }
 
     /**
@@ -146,10 +112,7 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         if (upwards) {
             resetLowerStages()
             okBtn.isEnabled = false
-            selectedOption?.let {
-                val latestStageOptions = dataProvider.stageData(curStageKey, mSelectedOptions)
-                recyclerView.scrollToPositionAtTop(latestStageOptions?.indexOf(it) ?: -1)
-            }
+            recyclerView.scrollToPositionAtTop(findOptionIndex(selectedOption))
         } else {
             recyclerView.scrollToPosition(0)
         }
@@ -168,11 +131,11 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
 
     // 跳至下一层级，如果该选择器尚未存在，则创建并渲染；若已存在，则渲染
     private fun jumpToNextStage() {
-        val nextTab = getStageTab(tabLayout.selectedTabPosition + 1)
+        val nextTab = getStageTabAt(tabLayout.selectedTabPosition + 1)
         nextTab.select()
     }
 
-    private fun getStageTab(stagePosition: Int): TabLayout.Tab {
+    private fun getStageTabAt(stagePosition: Int): TabLayout.Tab {
         val tab: TabLayout.Tab
         if (stagePosition < tabLayout.tabCount) {
             tab = tabLayout.getTabAt(stagePosition)!!
@@ -191,12 +154,22 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
         }
     }
 
+    // 通知 Listener 回调
     private fun notifyPickCompleted() {
         completedListener?.invoke(mSelectedOptions)
     }
 
-    private fun optionInTheTargetStage(stageKey: String, selectedOption: String?): Boolean {
-        return selectedOption != null && dataProvider.stageData(stageKey, mSelectedOptions)?.contains(selectedOption) ?: false
+    // 判断指定层级的预设值是否有效
+    private fun optionInTheTargetStage(stageKey: String, selectedOption: String): Boolean {
+        return dataProvider.stageData(stageKey, mSelectedOptions)?.contains(selectedOption) ?: false
+    }
+
+    // 找到 当前层级预设值 的索引
+    private fun findOptionIndex(option: String?): Int {
+        if (option == null) {
+            return -1
+        }
+        return curStageOptions?.indexOf(option) ?: -1
     }
 
 
@@ -209,8 +182,32 @@ class CommonMultistagePicker(context: Context) : MultistagePickerInterface {
     }
 
     override fun setSelectedOptions(selectedOptions: Map<String, String>) {
-        preSelectedOptions = selectedOptions
-        preSelect()
+        mSelectedOptions.clear()
+        var latestTab: TabLayout.Tab? = null
+        (0 until stageCount)
+                .asSequence()
+                .takeWhile {
+                    val key = dataProvider.stageKeys()[it]
+                    return@takeWhile selectedOptions.containsKey(key) && optionInTheTargetStage(key, selectedOptions[key]!!)
+                }
+                .forEach {
+                    curStagePosition = it
+                    val key = dataProvider.stageKeys()[it]
+                    val selectedOption = selectedOptions[key]!!
+
+                    mSelectedOptions[key] = selectedOption
+
+                    latestTab = getStageTabAt(it).apply {
+                        text = selectedOption
+                    }
+                }
+
+        latestTab?.select()
+
+        okBtn.isEnabled = isLowestStage
+
+        refreshOptions()
+        recyclerView.scrollToPositionAtTop(findOptionIndex(mSelectedOptions[curStageKey]))
     }
 
     override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
