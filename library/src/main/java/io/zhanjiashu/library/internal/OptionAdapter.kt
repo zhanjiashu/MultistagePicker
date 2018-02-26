@@ -18,6 +18,7 @@
 package io.zhanjiashu.library.internal
 
 import android.content.Context
+import android.support.v4.content.ContextCompat
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -26,17 +27,12 @@ import android.widget.TextView
 import io.zhanjiashu.library.R
 
 
-internal class OptionAdapter constructor(val data: MutableList<String>) : RecyclerView.Adapter<OptionVH>() {
+internal class OptionAdapter constructor(val data: MutableList<String>) : RadioRcvAdapter<OptionVH>() {
 
     constructor() : this(mutableListOf<String>())
 
     private lateinit var mContext: Context
     private lateinit var mLayoutInflater: LayoutInflater
-    private val internalListener = View.OnClickListener {
-        it.tag.safeCast<Int> {
-            mItemViewClickListener?.invoke(it, this@safeCast, data[this@safeCast])
-        }
-    }
 
     private var mItemViewClickListener: ((view: View, position: Int, option: String) -> Unit)? = null
 
@@ -47,19 +43,32 @@ internal class OptionAdapter constructor(val data: MutableList<String>) : Recycl
 
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OptionVH {
-        val vh = OptionVH(mLayoutInflater.inflate(R.layout.multistage_picker_potion_item_view, parent, false))
-        vh.textView.setOnClickListener(internalListener)
-        return vh
-    }
-
-    override fun onBindViewHolder(vh: OptionVH, position: Int) {
-        vh.textView.text = data[position]
-        vh.textView.tag = position
-    }
-
     override fun getItemCount(): Int {
         return data.size
+    }
+
+    override fun onCreateViewHolderWrapper(parent: ViewGroup, viewType: Int): OptionVH {
+        return OptionVH(mLayoutInflater.inflate(R.layout.mp_option_view, parent, false))
+    }
+
+    override fun onBindViewHolderWrapper(holder: OptionVH, position: Int, selected: Boolean) {
+        holder.textView.text = data[position]
+        holder.textView.tag = position
+        if (selected) {
+            holder.textView.apply {
+                setTextColor(ContextCompat.getColor(context, R.color.mp_red))
+                setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.mp_option_selected_icon, 0)
+            }
+        } else {
+            holder.textView.apply {
+                setTextColor(ContextCompat.getColor(context, R.color.mp_black))
+                setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+            }
+        }
+    }
+
+    override fun onSelectedItemChanged(itemView: View, position: Int) {
+        mItemViewClickListener?.invoke(itemView, position, data[position])
     }
 
     fun setOnItemViewClickListener(l: (v: View, position: Int, option: String) -> Unit) {

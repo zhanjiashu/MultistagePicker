@@ -17,13 +17,9 @@
 
 package io.zhanjiashu.library.internal
 
-import io.zhanjiashu.library.provider.MultistagePickerDataProvider
+interface PickerConfigInterface {
 
-interface MultistagePickerInterface {
+    fun setTitle(title: CharSequence?)
 
-    fun setDataProvider(provider: MultistagePickerDataProvider)
-
-    fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit)
-
-    fun setSelectedOptions(selectedOptions: Map<String, String>)
+    fun autoClose(auto: Boolean)
 }

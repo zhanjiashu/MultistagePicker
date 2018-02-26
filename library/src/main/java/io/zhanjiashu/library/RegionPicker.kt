@@ -18,15 +18,20 @@
 package io.zhanjiashu.library
 
 import android.content.Context
+import io.zhanjiashu.library.internal.PickerConfigInterface
+import io.zhanjiashu.library.internal.PickerDialogInterface
 import io.zhanjiashu.library.provider.*
 
-class RegionPicker(context: Context) {
+
+class RegionPicker private constructor(context: Context, private val picker: MultistagePickerDialog) : PickerDialogInterface by picker, PickerConfigInterface by picker {
+
+    constructor(context: Context) : this(context, MultistagePickerDialog(context, AddressPickerDataProvider(context)))
 
     private var addressPickSuccessListener: ((province: String, city: String, district: String) -> Unit)? = null
 
-    private val picker = MultistagePicker(context).apply {
-        setDataProvider(AddressPickerDataProvider(context))
-        setOnPickCompletedListener { selectedOptions ->
+    init {
+        setTitle("所在地区")
+        picker.setOnPickCompletedListener { selectedOptions ->
             addressPickSuccessListener?.invoke(
                     selectedOptions[STAGE_KEY_PROVINCE] ?: "",
                     selectedOptions[STAGE_KEY_CITY] ?: "",
@@ -40,14 +45,10 @@ class RegionPicker(context: Context) {
         province?.let { options[STAGE_KEY_PROVINCE] = it }
         city?.let { options[STAGE_KEY_CITY] = it }
         district?.let { options[STAGE_KEY_DISTRICT] = it }
-        picker.setSelectedOptions(options)
+        picker.setPreselectedOptions(options)
     }
 
     fun setOnAddressPickSuccessListener(l: (province: String, city: String, district: String) -> Unit) {
         addressPickSuccessListener = l
-    }
-
-    fun show() {
-        picker.show()
     }
 }

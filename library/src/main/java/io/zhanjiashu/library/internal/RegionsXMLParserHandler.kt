@@ -20,6 +20,10 @@ package io.zhanjiashu.library.internal
 import org.xml.sax.Attributes
 import org.xml.sax.helpers.DefaultHandler
 
+private const val TAG_PROVINCE = "province"
+private const val TAG_CITY = "city"
+private const val TAG_DISTRICT = "district"
+
 internal class RegionsXMLParserHandler : DefaultHandler() {
 
     private val provinces: ArrayList<Province> = arrayListOf()
@@ -32,21 +36,21 @@ internal class RegionsXMLParserHandler : DefaultHandler() {
 
     override fun startElement(uri: String, localName: String, qName: String, attributes: Attributes) {
         when (qName) {
-            "province" -> {
+            TAG_PROVINCE -> {
                 tempProvince = Province(
                         attributes.getValue(0),
                         arrayListOf()
                 )
             }
 
-            "city" -> {
+            TAG_CITY -> {
                 tempCity = City(
                         attributes.getValue(0),
                         arrayListOf()
                 )
             }
 
-            "district" -> {
+            TAG_DISTRICT -> {
                 tempDistrict = District(
                         attributes.getValue(0),
                         attributes.getValue(1)
@@ -57,15 +61,15 @@ internal class RegionsXMLParserHandler : DefaultHandler() {
 
     override fun endElement(uri: String, localName: String, qName: String) {
         when (qName) {
-            "district" -> {
+            TAG_DISTRICT -> {
                 tempCity.districts!!.add(tempDistrict)
             }
 
-            "city" -> {
+            TAG_CITY -> {
                 tempProvince.cities!!.add(tempCity)
             }
 
-            "province" -> {
+            TAG_PROVINCE -> {
                 provinces.add(tempProvince)
             }
         }
