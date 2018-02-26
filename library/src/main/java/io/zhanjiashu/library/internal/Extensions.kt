@@ -21,7 +21,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 
 
-internal inline fun <reified T> Any.safeCast(action: T.() -> Unit) {
+internal inline fun <reified T> Any?.safeCast(action: T.() -> Unit) {
     if (this is T) {
         this.action()
     }

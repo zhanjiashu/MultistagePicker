@@ -20,7 +20,6 @@ package io.zhanjiashu.library
 import android.content.Context
 import android.support.design.widget.BottomSheetDialog
 import android.view.View
-import io.zhanjiashu.library.internal.PickerConfigInterface
 import io.zhanjiashu.library.internal.PickerDialogInterface
 import io.zhanjiashu.library.internal.PickerInterface
 import io.zhanjiashu.library.provider.MultistagePickerDataProvider
@@ -34,7 +33,7 @@ open class MultistagePickerDialog private constructor(context: Context, private 
     private val dialog = BottomSheetDialog(context)
 
     init {
-        picker.autoClose(true)
+        picker.showConfirmButton(true)
 
         dialog.setContentView(picker.getView())
         dialog.apply {
@@ -43,7 +42,7 @@ open class MultistagePickerDialog private constructor(context: Context, private 
             // 点击外部区域隐藏选择器
             window.findViewById<View>(android.support.design.R.id.touch_outside).setOnClickListener {
                 if (dialog.isShowing) {
-                    dialog.cancel()
+                    this@MultistagePickerDialog.hide()
                 }
             }
 
@@ -58,7 +57,7 @@ open class MultistagePickerDialog private constructor(context: Context, private 
     override fun setOnPickCompletedListener(l: (selectedOptions: Map<String, String>) -> Unit) {
         picker.setOnPickCompletedListener {
             l.invoke(it)
-            picker.getView().postDelayed( { dialog.cancel() }, 200)
+            hide()
         }
     }
 
@@ -67,6 +66,6 @@ open class MultistagePickerDialog private constructor(context: Context, private 
     }
 
     override fun hide() {
-        dialog.hide()
+        picker.getView().postDelayed( { dialog.dismiss() }, 200)
     }
 }

@@ -23,32 +23,38 @@ import io.zhanjiashu.library.internal.PickerDialogInterface
 import io.zhanjiashu.library.provider.*
 
 
-class RegionPicker private constructor(context: Context, private val picker: MultistagePickerDialog) : PickerDialogInterface by picker, PickerConfigInterface by picker {
+class RegionPicker private constructor(private val picker: MultistagePickerDialog) : PickerDialogInterface by picker, PickerConfigInterface by picker {
 
-    constructor(context: Context) : this(context, MultistagePickerDialog(context, AddressPickerDataProvider(context)))
+    constructor(context: Context) : this(MultistagePickerDialog(context, AddressPickerDataProvider(context)))
 
-    private var addressPickSuccessListener: ((province: String, city: String, district: String) -> Unit)? = null
+    private var addressPickSuccessListener: ((region: Region) -> Unit)? = null
 
     init {
         setTitle("所在地区")
         picker.setOnPickCompletedListener { selectedOptions ->
-            addressPickSuccessListener?.invoke(
+            val region = Region (
                     selectedOptions[STAGE_KEY_PROVINCE] ?: "",
                     selectedOptions[STAGE_KEY_CITY] ?: "",
                     selectedOptions[STAGE_KEY_DISTRICT] ?: ""
             )
+            addressPickSuccessListener?.invoke(region)
         }
     }
 
-    fun setDefaultRegions(province: String?, city: String?, district: String?) {
-        val options = mutableMapOf<String, String>()
-        province?.let { options[STAGE_KEY_PROVINCE] = it }
-        city?.let { options[STAGE_KEY_CITY] = it }
-        district?.let { options[STAGE_KEY_DISTRICT] = it }
-        picker.setPreselectedOptions(options)
+    fun setDefaultRegion(region: Region?) {
+        region?.let {
+            val options = mutableMapOf(
+                    STAGE_KEY_PROVINCE to it.province,
+                    STAGE_KEY_CITY to it.city,
+                    STAGE_KEY_DISTRICT to it.district
+            )
+            picker.setPreselectedOptions(options)
+        }
     }
 
-    fun setOnAddressPickSuccessListener(l: (province: String, city: String, district: String) -> Unit) {
+    fun setOnAddressPickSuccessListener(l: (region: Region) -> Unit) {
         addressPickSuccessListener = l
     }
+
+    data class Region(val province: String, val city: String, val district: String)
 }

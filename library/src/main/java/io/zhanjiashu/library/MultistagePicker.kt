@@ -40,8 +40,7 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
 
     private val optionAdapter: OptionAdapter
 
-    private var autoClose = true
-//    private lateinit var dataProvider:  MultistagePickerDataProvider
+    private var showConfirmButton = true
     private var completedListener: ((selectedOptions: Map<String, String>) -> Unit)? = null
 
     private var curStagePosition = 0
@@ -91,7 +90,7 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
 
         })
 
-        if (autoClose) {
+        if (showConfirmButton) {
             okBtn.visibility = View.GONE
         } else {
             okBtn.visibility = View.VISIBLE
@@ -136,7 +135,7 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
         tabLayout.getTabAt(tabLayout.selectedTabPosition)?.text = option
         mSelectedOptions[curStageKey] = option
         if (isLowestStage) {
-            if (autoClose) {
+            if (showConfirmButton) {
                 notifyPickCompleted()
             } else {
                 okBtn.isEnabled = true
@@ -202,12 +201,6 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
         }
     }
 
-//    override fun setDataProvider(provider: MultistagePickerDataProvider) {
-//        this.dataProvider = provider
-//
-//        refreshOptions()
-//    }
-
     override fun setPreselectedOptions(selectedOptions: Map<String, String>) {
         mSelectedOptions.clear()
         var latestTab: TabLayout.Tab? = null
@@ -241,9 +234,9 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
         completedListener = l
     }
 
-    override fun autoClose(auto: Boolean) {
-        okBtn.visibility = if (auto) View.GONE else View.VISIBLE
-        this.autoClose = auto
+    override fun showConfirmButton(shown: Boolean) {
+        okBtn.visibility = if (shown) View.GONE else View.VISIBLE
+        this.showConfirmButton = shown
     }
 
 
@@ -254,12 +247,5 @@ class MultistagePicker(context: Context, private val dataProvider: MultistagePic
      */
     fun getView(): View {
         return pickerView
-    }
-
-    /**
-     * 将多层嵌套到某个Layout中
-     */
-    fun bindToLayout(layout: ViewGroup) {
-        layout.addView(pickerView)
     }
 }
